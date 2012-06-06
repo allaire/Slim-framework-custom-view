@@ -1,20 +1,23 @@
 <?php
 class custom_view extends Slim_View
 {
-	static protected $_layout = NULL;
-	static protected $_data   = NULL;
+	protected $_layout = NULL;
+	protected $_data   = NULL;
 
-	public static function set_layout($layout = NULL, $data = array())
+	public function set_layout($layout = NULL, $data = array())
 	{
-		self::$_data = $data;
-		self::$_layout = $layout;
+		$this->_layout = $layout;
+		$this->_data = $data;
 	}
 
-	public static function set_data($data = NULL)
+	public function set_data($data = NULL)
 	{
-		self::$_data = $data;
+		$this->_data = $data;
 	}
 
+	/**
+	 * Overwrite the render method of Slim_View in order to include it in a layout
+	 */
 	public function render($template)
 	{
 		$template_path = $this->getTemplatesDirectory() . '/' . ltrim($template, '/');
@@ -24,6 +27,7 @@ class custom_view extends Slim_View
 			throw new RuntimeException('View cannot render template `' . $template_path . '`. Template does not exist.');
 		}
 
+		// $this->data refers to Slim framework template (not base layout) variables
 		extract($this->data);
 
 		ob_start();
@@ -33,18 +37,23 @@ class custom_view extends Slim_View
 		return $this->_render_layout($html);
 	}
 
+	/**
+	 * Create a similar render method but for the layout (called by the official render method)
+	 * At the moment, you have to use $content in your layout to load up your view
+	 */
 	private function _render_layout($content)
 	{
-		if(self::$_layout !== NULL)
+		if($this->_layout !== NULL)
 		{
-			$layout_path = $this->getTemplatesDirectory() . '/' . ltrim(self::$_layout, '/');
+			$layout_path = $this->getTemplatesDirectory() . '/' . ltrim($this->_layout, '/');
 
 			if (!file_exists($layout_path))
 			{
 				throw new RuntimeException('View cannot render layout `' . $layout_path . '`. Layout does not exist.');
 			}
 
-			extract(self::$_data);
+			// Base layout variables
+			extract($this->_data);
 
 			ob_start();
 			require $layout_path;
